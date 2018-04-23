@@ -2,25 +2,25 @@
 
 HEADER
 	INCLUDE "AeroBasicConstants.abi"
-	DEFINE UPPER_LIMIT_MASK     AXISSTATUS_CwEOTLimit 
-	DEFINE LOWER_LIMIT_MASK 	AXISSTATUS_CcwEOTLimit
-	DEFINE OVERCURRENT_MASK 	AXISFAULT_OverCurrent
-	DEFINE ENCODER_FAULT_MASK	AXISFAULT_EncoderFault
-	DEFINE POSITION_FBK_MASK	AXISFAULT_PositionFbk
+	DEFINE UPPER_LIMIT_MASK          AXISSTATUS_CwEOTLimit 
+	DEFINE LOWER_LIMIT_MASK          AXISSTATUS_CcwEOTLimit
+	DEFINE OVERCURRENT_MASK          AXISFAULT_OverCurrent
+	DEFINE ENCODER_FAULT_MASK        AXISFAULT_EncoderFault
+	DEFINE POSITION_FBK_MASK         AXISFAULT_PositionFbk
 	
-	DEFINE RECOVER_DISABLE      0  ' Disable immediately
-	DEFINE RECOVER_MOVE         1  ' Move to 0 and disable
-	DEFINE RECOVER_NO_OP        2  ' No operation
+	DEFINE RECOVER_DISABLE           0  ' Disable immediately
+	DEFINE RECOVER_MOVE              1  ' Move to 0 and disable
+	DEFINE RECOVER_NO_OP             2  ' No operation
 	
-	DEFINE iFaultVar            60 ' IGLOBAL 60 to read back Fault 
+	DEFINE iFaultVar                 60 ' IGLOBAL 60 to read back Fault 
+	DEFINE FWSFaultMask              0x1C04CF
+	DEFINE FWSFaultMaskNoOverCurrent 0x1C04CD
+	DEFINE FWSFaultMaskNoCCWLimit    0x1C04C7
 END HEADER
 
 DECLARATIONS
 	GLOBAL FaultNum as INTEGER = 0
 	GLOBAL LinMotAxisNumber as INTEGER = 0
-	GLOBAL LinMotFaultMask as INTEGER = 0x1C04CF
-	GLOBAL LinMotFaultMaskNoOverCurrent as INTEGER = 0x1C04CD
-	GLOBAL LinMotFaultMaskNoCCWLimit as INTEGER = 0x1C04C7
 	' This includes: 
 	'   * position error fault
 	'	* --> over current <--
@@ -52,24 +52,24 @@ END DECLARATIONS
 PROGRAM
 	ONAXISFAULT FaultHandler
 	ONTASKERROR FaultHandler
-	SETPARM X,FaultMask,LinMotFaultMask
+	SETPARM X,FaultMask,FWSFaultMask
 	CALL LinMotEnable(LinMotAxisNumber)
 	while (1)
 		SETJMP
 		'CHECK FAULTMASK VALUE
 		TEST=GETPARM (X, FaultMask)
-		IF (TEST != LinMotFaultMask) THEN
-			SETPARM X,FaultMask,LinMotFaultMask
+		IF (TEST != FWSFaultMask) THEN
+			SETPARM X,FaultMask,FWSFaultMask
 		END IF
 	wend
 END PROGRAM
 
 FUNCTION LinMotEnable(ByVal Axis as integer)
-	SETPARM @Axis,FaultMask,LinMotFaultMaskNoCCWLimit
+	SETPARM @Axis,FaultMask,FWSFaultMaskNoCCWLimit
 	dwell .1
 	ENABLE @Axis
 	dwell .1
-	SETPARM @Axis,FaultMask,LinMotFaultMask
+	SETPARM @Axis,FaultMask,FWSFaultMask
 END FUNCTION
 	
 FUNCTION FaultHandler ()
@@ -148,7 +148,7 @@ FUNCTION FaultHandler ()
 		DISABLE X
 	ELSEIF (RecoverAction = RECOVER_MOVE) THEN
 		print "Move to zero\n"
-		SETPARM X,FaultMask,LinMotFaultMaskNoOverCurrent
+		SETPARM X,FaultMask,FWSFaultMaskNoOverCurrent
 		'print "Fault ack / "
 		FAULTACK X
 		'print "Move mode / "
@@ -156,7 +156,7 @@ FUNCTION FaultHandler ()
 		'print "Move to 0 / "
 		MOVEABS X 0 F 100
 		'print "Reset fault mask / "
-		SETPARM X,FaultMask,LinMotFaultMask
+		SETPARM X,FaultMask,FWSFaultMask
 		'print "Disable\n"
 		'DISABLE X
 	ELSEIF (RecoverAction = RECOVER_NO_OP) THEN
