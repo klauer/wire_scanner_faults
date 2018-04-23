@@ -1,0 +1,163 @@
+HEADER
+	INCLUDE "AeroBasicConstants.abi"
+	DEFINE UPPER_LIMIT_MASK     AXISSTATUS_CwEOTLimit 
+	DEFINE LOWER_LIMIT_MASK 	AXISSTATUS_CcwEOTLimit
+	DEFINE OVERCURRENT_MASK 	AXISFAULT_OverCurrent
+	DEFINE ENCODER_FAULT_MASK	AXISFAULT_EncoderFault
+	DEFINE POSITION_FBK_MASK	AXISFAULT_PositionFbk
+	
+	DEFINE RECOVER_DISABLE      0  ' Disable immediately
+	DEFINE RECOVER_MOVE         1  ' Move to 0 and disable
+	DEFINE RECOVER_NO_OP        2  ' No operation
+END HEADER
+
+DECLARATIONS
+	GLOBAL FaultNum as INTEGER = 0
+	GLOBAL LinMotAxisNumber as INTEGER = 0
+	GLOBAL LinMotFaultMask as INTEGER = 0x1C04CF
+	GLOBAL LinMotFaultMaskNoOverCurrent as INTEGER = 0x1C04CD
+	GLOBAL LinMotFaultMaskNoCCWLimit as INTEGER = 0x1C04C7
+	' This includes: 
+	'   * position error fault
+	'	* --> over current <--
+	'	* ccw/cw limits
+	'	* position feedback fault
+	'	* amplifier fault
+	' 	* maximum velocity command fault
+	'	* amplifier temperature fault
+	'	* encoder fault
+	' 	* communication lost fault
+	
+	GLOBAL XAxisStatus as INTEGER
+	GLOBAL AtUpperLimit as INTEGER
+	GLOBAL AtLowerLimit as INTEGER
+	GLOBAL RecoverAction as INTEGER
+	
+	' Overcurrent Fault: average current is over the threshold
+	' Feedback fault: encoder gets faulty/disconnected encoder
+	' Position Fault: Pos Cmd - Pos Fbk > Threshold
+	' Encoder Fault: Fault input on J103 connector Pin#23 ' Do not have for FWS chassis
+	GLOBAL FaultStatus as INTEGER
+	GLOBAL OverCurrent as INTEGER
+	GLOBAL PositionFault as INTEGER
+	GLOBAL EncoderFault as INTEGER
+	GLOBAL FeedbackFault as INTEGER
+	
+END DECLARATIONS
+
+PROGRAM
+	ONAXISFAULT FaultHandler
+	ONTASKERROR FaultHandler
+	SETPARM X,FaultMask,LinMotFaultMask
+	CALL LinMotEnable(LinMotAxisNumber)
+	while (1)
+		SETJMP
+		'CHECK FAULTMASK VALUE
+		TEST=GETPARM (X, FaultMask)
+		IF (TEST != LinMotFaultMask) THEN
+			SETPARM X,FaultMask,LinMotFaultMask
+		END IF
+	wend
+END PROGRAM
+
+FUNCTION LinMotEnable(ByVal Axis as integer)
+	SETPARM @Axis,FaultMask,LinMotFaultMaskNoCCWLimit
+	dwell .1
+	ENABLE @Axis
+	dwell .1
+	SETPARM @Axis,FaultMask,LinMotFaultMask
+END FUNCTION
+	
+FUNCTION FaultHandler ()
+	ABORT X 'CLEAR ANY MOVE COMMANDS
+	
+	XAxisStatus = AXISSTATUS(X) 
+	AtUpperLimit = XAxisStatus BAND UPPER_LIMIT_MASK
+	AtLowerLimit = XAxisStatus BAND LOWER_LIMIT_MASK
+	
+	FaultStatus = AXISFAULT(X) 
+	EncoderFault = FaultStatus BAND ENCODER_FAULT_MASK
+	OverCurrent = FaultStatus BAND OVERCURRENT_MASK
+	FeedbackFault = FaultStatus BAND POSITION_FBK_MASK
+	
+	RecoverAction = RECOVER_DISABLE
+	
+	FaultNum = FaultNum + 1
+	
+	if (FaultNum = 1) then
+		print "(Fault 1) "	
+	ElseIf (FaultNum = 2) then
+		FaultNum = 0
+		print "(Fault 2) "
+	end if
+	
+	if (OverCurrent = OVERCURRENT_MASK) then
+		print "(OC) "
+	end if
+	
+	if (FeedbackFault = POSITION_FBK_MASK) then
+		print "(FB) "
+	end if
+	
+	IF (FeedbackFault = POSITION_FBK_MASK) THEN
+		RecoverAction = RECOVER_DISABLE
+		IF (AtLowerLimit = LOWER_LIMIT_MASK) THEN
+		    PRINT "Feedback fault, at lower limit: "
+		ELSE
+			' TODO: open-loop motion to negative limit?
+			' MSET X, 2, 0 ' ?
+		    PRINT "Feedback fault,not at lower limit: "
+		END IF 
+	' The remaining conditions will be evaluated based on limit switch status:
+	'	* over current
+	'	* amplifier fault
+	'	* position error (following) fault
+	' 	* maximum velocity command fault
+	'	* amplifier temperature fault
+	' 	* communication lost fault
+	ELSEIF (AtUpperLimit = UPPER_LIMIT_MASK) AND (AtLowerLimit = LOWER_LIMIT_MASK) THEN
+		' Both limits ON!! Limit issue
+	    PRINT "Both limits on, check connection!!\n"
+		RecoverAction = RECOVER_DISABLE
+	ELSEIF (AtUpperLimit = UPPER_LIMIT_MASK) THEN
+		PRINT "Fault when at upper limit: "
+		'ELIMINATE RMS CURRENT ERROR FROM MASK SO THAT WE CAN MOVE
+		RecoverAction = RECOVER_MOVE
+	ELSEIF (AtLowerLimit = LOWER_LIMIT_MASK) THEN
+		PRINT "Fault when at lower limit: "
+		IF (OverCurrent = OVERCURRENT_MASK) THEN
+		    PRINT "Lower limit: over current fault: "
+			RecoverAction = RECOVER_DISABLE
+		ELSE
+			RecoverAction = RECOVER_NO_OP
+		END IF 
+	ELSE
+		PRINT "Fault with no limits actuated: "
+	    ' Move to 0 and disable
+		RecoverAction = RECOVER_MOVE
+	END IF
+	
+	IF (RecoverAction = RECOVER_DISABLE) THEN
+		print "Disable\n"
+		DISABLE X
+	ELSEIF (RecoverAction = RECOVER_MOVE) THEN
+		print "Move to zero\n"
+		SETPARM X,FaultMask,LinMotFaultMaskNoOverCurrent
+		'print "Fault ack / "
+		FAULTACK X
+		'print "Move mode / "
+		WAIT MODE MOVEDONE
+		'print "Move to 0 / "
+		MOVEABS X 0 F 100
+		'print "Reset fault mask / "
+		SETPARM X,FaultMask,LinMotFaultMask
+		'print "Disable\n"
+		'DISABLE X
+	ELSEIF (RecoverAction = RECOVER_NO_OP) THEN
+		print "No operation\n"
+	END IF
+	' TODO: The Emergency Stop fault and the Communication Lost fault, however, 
+	'		can be reported when the axis is disabled.
+	
+	LONGJMP
+END FUNCTION
