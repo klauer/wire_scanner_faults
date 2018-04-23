@@ -1,4 +1,11 @@
-' vi: syntax=basic
+' vi: syntax=basic noet
+
+'TODO:
+' 1. Remove print statements for production script
+' 2. Handle re-entrant nature of fault handler
+' 3. Feedback fault continues to spit out messages until acknowledged, filling up buffer
+' 4. The Emergency Stop fault and the Communication Lost fault, however, can be
+'	 reported when the axis is disabled.
 
 HEADER
 	INCLUDE "AeroBasicConstants.abi"
@@ -9,7 +16,7 @@ HEADER
 	DEFINE POSITION_FBK_MASK         AXISFAULT_PositionFbk
 	
 	DEFINE RECOVER_DISABLE           0  ' Disable immediately
-	DEFINE RECOVER_MOVE              1  ' Move to 0 and disable
+	DEFINE RECOVER_RETRACT           1  ' Move to 0 and disable
 	DEFINE RECOVER_NO_OP             2  ' No operation
 	
 	DEFINE iFaultVar                 60 ' IGLOBAL 60 to read back Fault 
@@ -74,13 +81,16 @@ END FUNCTION
 	
 FUNCTION FaultHandler ()
 	ABORT X 'CLEAR ANY MOVE COMMANDS
+	FaultStatus = AXISFAULT(X) 
+
+	' Disable overcurrent so that we do not get another fault during this handler
+	SETPARM X,FaultMask,FWSFaultMaskNoOverCurrent
+	
+	IGLOBAL(iFaultVar) = FaultStatus
 	
 	XAxisStatus = AXISSTATUS(X) 
 	AtUpperLimit = XAxisStatus BAND UPPER_LIMIT_MASK
 	AtLowerLimit = XAxisStatus BAND LOWER_LIMIT_MASK
-	
-	FaultStatus = AXISFAULT(X) 
-	IGLOBAL(iFaultVar) = FaultStatus
 	
 	EncoderFault = FaultStatus BAND ENCODER_FAULT_MASK
 	OverCurrent = FaultStatus BAND OVERCURRENT_MASK
@@ -106,13 +116,13 @@ FUNCTION FaultHandler ()
 	end if
 	
 	IF (FeedbackFault = POSITION_FBK_MASK) THEN
-		RecoverAction = RECOVER_DISABLE
+		' Perform default action: disable
 		IF (AtLowerLimit = LOWER_LIMIT_MASK) THEN
-		    PRINT "Feedback fault, at lower limit: "
+			PRINT "Feedback@lower: "
 		ELSE
 			' TODO: open-loop motion to negative limit?
 			' MSET X, 2, 0 ' ?
-		    PRINT "Feedback fault,not at lower limit: "
+			PRINT "Feedback: "
 		END IF 
 	' The remaining conditions will be evaluated based on limit switch status:
 	'	* over current
@@ -123,47 +133,41 @@ FUNCTION FaultHandler ()
 	' 	* communication lost fault
 	ELSEIF (AtUpperLimit = UPPER_LIMIT_MASK) AND (AtLowerLimit = LOWER_LIMIT_MASK) THEN
 		' Both limits ON!! Limit issue
-	    PRINT "Both limits on, check connection!!\n"
-		RecoverAction = RECOVER_DISABLE
+		PRINT "Limit issue! "
+		' Perform default action: disable
 	ELSEIF (AtUpperLimit = UPPER_LIMIT_MASK) THEN
-		PRINT "Fault when at upper limit: "
+		PRINT "@upper: "
 		'ELIMINATE RMS CURRENT ERROR FROM MASK SO THAT WE CAN MOVE
-		RecoverAction = RECOVER_MOVE
+		RecoverAction = RECOVER_RETRACT
 	ELSEIF (AtLowerLimit = LOWER_LIMIT_MASK) THEN
-		PRINT "Fault when at lower limit: "
+		PRINT "@lower: "
 		IF (OverCurrent = OVERCURRENT_MASK) THEN
-		    PRINT "Lower limit: over current fault: "
-			RecoverAction = RECOVER_DISABLE
+			PRINT "Overcurrent @lower: "
+			' Perform default action: disable
 		ELSE
 			RecoverAction = RECOVER_NO_OP
 		END IF 
 	ELSE
-		PRINT "Fault with no limits actuated: "
-	    ' Move to 0 and disable
-		RecoverAction = RECOVER_MOVE
+		PRINT "General fault: "
+		' Move to 0 and disable
+		RecoverAction = RECOVER_RETRACT
 	END IF
 	
 	IF (RecoverAction = RECOVER_DISABLE) THEN
 		print "Disable\n"
 		DISABLE X
-	ELSEIF (RecoverAction = RECOVER_MOVE) THEN
-		print "Move to zero\n"
-		SETPARM X,FaultMask,FWSFaultMaskNoOverCurrent
-		'print "Fault ack / "
+	ELSEIF (RecoverAction = RECOVER_RETRACT) THEN
+		print "Retract\n"
 		FAULTACK X
-		'print "Move mode / "
 		WAIT MODE MOVEDONE
-		'print "Move to 0 / "
 		MOVEABS X 0 F 100
-		'print "Reset fault mask / "
-		SETPARM X,FaultMask,FWSFaultMask
-		'print "Disable\n"
-		'DISABLE X
+		DISABLE X
 	ELSEIF (RecoverAction = RECOVER_NO_OP) THEN
 		print "No operation\n"
 	END IF
-	' TODO: The Emergency Stop fault and the Communication Lost fault, however, 
-	'		can be reported when the axis is disabled.
+
+	' Reset the fault mask
+	SETPARM X,FaultMask,FWSFaultMask
 	
 	LONGJMP
 END FUNCTION
