@@ -1,3 +1,5 @@
+' vi: syntax=basic
+
 HEADER
 	INCLUDE "AeroBasicConstants.abi"
 	DEFINE UPPER_LIMIT_MASK     AXISSTATUS_CwEOTLimit 
@@ -9,6 +11,8 @@ HEADER
 	DEFINE RECOVER_DISABLE      0  ' Disable immediately
 	DEFINE RECOVER_MOVE         1  ' Move to 0 and disable
 	DEFINE RECOVER_NO_OP        2  ' No operation
+	
+	DEFINE iFaultVar            60 ' IGLOBAL 60 to read back Fault 
 END HEADER
 
 DECLARATIONS
@@ -76,6 +80,8 @@ FUNCTION FaultHandler ()
 	AtLowerLimit = XAxisStatus BAND LOWER_LIMIT_MASK
 	
 	FaultStatus = AXISFAULT(X) 
+	IGLOBAL(iFaultVar) = FaultStatus
+	
 	EncoderFault = FaultStatus BAND ENCODER_FAULT_MASK
 	OverCurrent = FaultStatus BAND OVERCURRENT_MASK
 	FeedbackFault = FaultStatus BAND POSITION_FBK_MASK
