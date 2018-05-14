@@ -13,21 +13,25 @@ HEADER
 	DEFINE LOWER_LIMIT_MASK          AXISSTATUS_CcwEOTLimit
 	DEFINE OVERCURRENT_MASK          AXISFAULT_OverCurrent
 	DEFINE ENCODER_FAULT_MASK        AXISFAULT_EncoderFault
+	DEFINE POSERROR_FAULT_MASK       AXISFAULT_PositionError
+	DEFINE LOWER_LIMIT_FAULT_MASK    AXISFAULT_CcwEOTLimit
 	DEFINE POSITION_FBK_MASK         AXISFAULT_PositionFbk
 	
-	DEFINE RECOVER_DISABLE           0  ' Disable immediately
-	DEFINE RECOVER_RETRACT           1  ' Move to 0 and disable
-	DEFINE RECOVER_NO_OP             2  ' No operation
+	DEFINE RECOVER_NO_OP             0  ' No operation
+	DEFINE RECOVER_DISABLE           1  ' Disable immediately
+	DEFINE RECOVER_RETRACT           2  ' Move to 0 and disable
 	
 	DEFINE iFaultVar                 60 ' IGLOBAL 60 to read back Fault 
+	DEFINE iRecoverVar               61 ' IGLOBAL 61 to send to recovery task
 	DEFINE FWSFaultMask              0x1C04CF
 	DEFINE FWSFaultMaskNoOverCurrent 0x1C04CD
 	DEFINE FWSFaultMaskNoCCWLimit    0x1C04C7
+	DEFINE LinMotAxisNumber 		 0
 END HEADER
 
 DECLARATIONS
 	GLOBAL FaultNum as INTEGER = 0
-	GLOBAL LinMotAxisNumber as INTEGER = 0
+	
 	' This includes: 
 	'   * position error fault
 	'	* --> over current <--
@@ -42,49 +46,72 @@ DECLARATIONS
 	GLOBAL XAxisStatus as INTEGER
 	GLOBAL AtUpperLimit as INTEGER
 	GLOBAL AtLowerLimit as INTEGER
-	GLOBAL RecoverAction as INTEGER
 	
 	' Overcurrent Fault: average current is over the threshold
 	' Feedback fault: encoder gets faulty/disconnected encoder
-	' Position Fault: Pos Cmd - Pos Fbk > Threshold
+	' PosError Fault: Pos Cmd - Pos Fbk > Threshold
 	' Encoder Fault: Fault input on J103 connector Pin#23 ' Do not have for FWS chassis
 	GLOBAL FaultStatus as INTEGER
 	GLOBAL OverCurrent as INTEGER
-	GLOBAL PositionFault as INTEGER
+	GLOBAL PosErrorFault as INTEGER
 	GLOBAL EncoderFault as INTEGER
 	GLOBAL FeedbackFault as INTEGER
+	GLOBAL LowerLimitFault as INTEGER
 	
 END DECLARATIONS
 
 PROGRAM
-	ONAXISFAULT FaultHandler
-	ONTASKERROR FaultHandler
-	SETPARM X,FaultMask,FWSFaultMask
+    'Clear the recovery iglobal variable
+    IGLOBAL(iRecoverVar) = RECOVER_NO_OP
 	CALL LinMotEnable(LinMotAxisNumber)
+	
+	ONAXISFAULT AxisFaultHandler
+	ONTASKERROR TaskErrorHandler
+	SETPARM X,FaultMask,FWSFaultMask
 	while (1)
 		SETJMP
-		'CHECK FAULTMASK VALUE
-		TEST=GETPARM (X, FaultMask)
-		IF (TEST != FWSFaultMask) THEN
+		
+		TEST = TASKSTATE(3)
+		if (TEST = TASKSTATE_Error) AND IGLOBAL(iRecoverVar) != RECOVER_NO_OP THEN
 			SETPARM X,FaultMask,FWSFaultMask
+			PROGRAM RUN 3, "RecoveryHandler.bcx"
 		END IF
+		'CHECK FAULTMASK VALUE
+		'TEST=GETPARM (X, FaultMask)
+		'IF (TEST != FWSFaultMask) THEN
+		'	SETPARM X,FaultMask,FWSFaultMask
+		'END IF
 	wend
 END PROGRAM
 
+
 FUNCTION LinMotEnable(ByVal Axis as integer)
 	SETPARM @Axis,FaultMask,FWSFaultMaskNoCCWLimit
+	FAULTACK @Axis
 	dwell .1
 	ENABLE @Axis
 	dwell .1
 	SETPARM @Axis,FaultMask,FWSFaultMask
 END FUNCTION
-	
-FUNCTION FaultHandler ()
-	ABORT X 'CLEAR ANY MOVE COMMANDS
-	FaultStatus = AXISFAULT(X) 
 
-	' Disable overcurrent so that we do not get another fault during this handler
-	SETPARM X,FaultMask,FWSFaultMaskNoOverCurrent
+
+FUNCTION TaskErrorHandler ()
+	'ACKNOWLEDGEALL
+	' Reset the fault mask
+	'SETPARM X,FaultMask,FWSFaultMask
+	'PROGRAM RUN 3, "RecoveryHandler.bcx"
+	LONGJMP
+END FUNCTION
+
+
+FUNCTION AxisFaultHandler ()
+	FaultStatus = AXISFAULT(X)
+	'FAULTACK X
+
+	if IGLOBAL(iRecoverVar) != RECOVER_NO_OP then
+		' Recovery script has not yet handled it...
+		LONGJMP
+	end if
 	
 	IGLOBAL(iFaultVar) = FaultStatus
 	
@@ -92,38 +119,33 @@ FUNCTION FaultHandler ()
 	AtUpperLimit = XAxisStatus BAND UPPER_LIMIT_MASK
 	AtLowerLimit = XAxisStatus BAND LOWER_LIMIT_MASK
 	
+	PosErrorFault = FaultStatus BAND POSERROR_FAULT_MASK
 	EncoderFault = FaultStatus BAND ENCODER_FAULT_MASK
 	OverCurrent = FaultStatus BAND OVERCURRENT_MASK
 	FeedbackFault = FaultStatus BAND POSITION_FBK_MASK
+	LowerLimitFault = FaultStatus BAND LOWER_LIMIT_FAULT_MASK
 	
-	RecoverAction = RECOVER_DISABLE
-	
-	FaultNum = FaultNum + 1
-	
-	if (FaultNum = 1) then
-		print "(Fault 1) "	
-	ElseIf (FaultNum = 2) then
-		FaultNum = 0
-		print "(Fault 2) "
-	end if
+	'IGLOBAL(iRecoverVar) = RECOVER_DISABLE
 	
 	if (OverCurrent = OVERCURRENT_MASK) then
 		print "(OC) "
 	end if
 	
-	if (FeedbackFault = POSITION_FBK_MASK) then
-		print "(FB) "
-	end if
+	'if (FeedbackFault = POSITION_FBK_MASK) then
+	'	print "(FB) "
+	'end if
 	
 	IF (FeedbackFault = POSITION_FBK_MASK) THEN
 		' Perform default action: disable
-		IF (AtLowerLimit = LOWER_LIMIT_MASK) THEN
+		' Encoder physically disconnected
+		IF (AtLowerLimit = LOWER_LIMIT_MASK) or (LowerLimitFault = LOWER_LIMIT_FAULT_MASK) THEN
 			PRINT "Feedback@lower: "
 		ELSE
 			' TODO: open-loop motion to negative limit?
 			' MSET X, 2, 0 ' ?
 			PRINT "Feedback: "
-		END IF 
+		END IF
+		IGLOBAL(iRecoverVar) = RECOVER_DISABLE
 	' The remaining conditions will be evaluated based on limit switch status:
 	'	* over current
 	'	* amplifier fault
@@ -135,39 +157,28 @@ FUNCTION FaultHandler ()
 		' Both limits ON!! Limit issue
 		PRINT "Limit issue! "
 		' Perform default action: disable
+		IGLOBAL(iRecoverVar) = RECOVER_DISABLE
 	ELSEIF (AtUpperLimit = UPPER_LIMIT_MASK) THEN
 		PRINT "@upper: "
 		'ELIMINATE RMS CURRENT ERROR FROM MASK SO THAT WE CAN MOVE
-		RecoverAction = RECOVER_RETRACT
-	ELSEIF (AtLowerLimit = LOWER_LIMIT_MASK) THEN
-		PRINT "@lower: "
-		IF (OverCurrent = OVERCURRENT_MASK) THEN
+		IGLOBAL(iRecoverVar) = RECOVER_RETRACT
+	ELSEIF (AtLowerLimit = LOWER_LIMIT_MASK) or (LowerLimitFault = LOWER_LIMIT_FAULT_MASK) THEN
+		' PRINT "@lower: "
+		IF (OverCurrent = OVERCURRENT_MASK) or (PosErrorFault = POSERROR_FAULT_MASK)  THEN
 			PRINT "Overcurrent @lower: "
 			' Perform default action: disable
+			IGLOBAL(iRecoverVar) = RECOVER_DISABLE
 		ELSE
-			RecoverAction = RECOVER_NO_OP
-		END IF 
+			IGLOBAL(iRecoverVar) = RECOVER_NO_OP
+			FAULTACK X
+		END IF
+	ELSEIF (FaultStatus = 0) THEN
+		IGLOBAL(iRecoverVar) = RECOVER_NO_OP
 	ELSE
 		PRINT "General fault: "
 		' Move to 0 and disable
-		RecoverAction = RECOVER_RETRACT
+		IGLOBAL(iRecoverVar) = RECOVER_RETRACT
 	END IF
-	
-	IF (RecoverAction = RECOVER_DISABLE) THEN
-		print "Disable\n"
-		DISABLE X
-	ELSEIF (RecoverAction = RECOVER_RETRACT) THEN
-		print "Retract\n"
-		FAULTACK X
-		WAIT MODE MOVEDONE
-		MOVEABS X 0 F 100
-		DISABLE X
-	ELSEIF (RecoverAction = RECOVER_NO_OP) THEN
-		print "No operation\n"
-	END IF
-
-	' Reset the fault mask
-	SETPARM X,FaultMask,FWSFaultMask
 	
 	LONGJMP
 END FUNCTION
