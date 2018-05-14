@@ -1,0 +1,52 @@
+HEADER
+	INCLUDE "AeroBasicConstants.abi"
+	DEFINE UPPER_LIMIT_MASK          AXISSTATUS_CwEOTLimit 
+	DEFINE LOWER_LIMIT_MASK          AXISSTATUS_CcwEOTLimit
+	DEFINE OVERCURRENT_MASK          AXISFAULT_OverCurrent
+	DEFINE ENCODER_FAULT_MASK        AXISFAULT_EncoderFault
+	DEFINE LOWER_LIMIT_FAULT_MASK    AXISFAULT_CcwEOTLimit
+	DEFINE POSITION_FBK_MASK         AXISFAULT_PositionFbk
+	
+	DEFINE RECOVER_NO_OP             0  ' No operation
+	DEFINE RECOVER_DISABLE           1  ' Disable immediately
+	DEFINE RECOVER_RETRACT           2  ' Move to 0 and disable
+	
+	DEFINE iFaultVar                 60 ' IGLOBAL 60 to read back Fault 
+	DEFINE iRecoverVar               61 ' IGLOBAL 61 to send to recovery task
+	DEFINE FWSFaultMask              0x1C04CF
+	DEFINE FWSFaultMaskNoOverCurrent 0x1C04CD
+	DEFINE FWSFaultMaskNoFBOC        0x1C04CC
+	DEFINE FWSFaultMaskNoCCWLimit    0x1C04C7
+	DEFINE LinMotAxisNumber 		 0
+END HEADER
+
+DECLARATIONS
+	GLOBAL RecoverAction as INTEGER = RECOVER_NO_OP
+END DECLARATIONS
+
+PROGRAM
+    'clear recovery iglobal variable
+    IGLOBAL(iRecoverVar) = RECOVER_NO_OP
+	while (1)
+		RecoverAction = IGLOBAL(iRecoverVar)
+		IF (RecoverAction = RECOVER_DISABLE) THEN
+			'print "Disable\n"
+			ABORT X
+			DISABLE X
+			FAULTACK X
+			IGLOBAL(iRecoverVar) = RECOVER_NO_OP
+		ELSEIF (RecoverAction = RECOVER_RETRACT) THEN
+			'print "Retract\n"
+			SETPARM X,FaultMask,FWSFaultMaskNoFBOC
+			ABORT X
+			FAULTACK X
+			MOVEABS X 0 F 100
+			WAIT MOVEDONE X
+			DISABLE X
+			SETPARM X,FaultMask,FWSFaultMask
+			IGLOBAL(iRecoverVar) = RECOVER_NO_OP
+		ELSEIF (RecoverAction = RECOVER_NO_OP) THEN
+			' print "No operation\n"
+		END IF
+	wend
+END PROGRAM
