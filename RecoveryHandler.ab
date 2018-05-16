@@ -30,23 +30,21 @@ PROGRAM
 	while (1)
 		RecoverAction = IGLOBAL(iRecoverVar)
 		IF (RecoverAction = RECOVER_DISABLE) THEN
-			'print "Disable\n"
-			ABORT X
-			DISABLE X
-			FAULTACK X
+			ABORT @LinMotAxisNumber
+			DISABLE @LinMotAxisNumber
+			FAULTACK @LinMotAxisNumber
 			IGLOBAL(iRecoverVar) = RECOVER_NO_OP
 		ELSEIF (RecoverAction = RECOVER_RETRACT) THEN
-			'print "Retract\n"
-			SETPARM X,FaultMask,FWSFaultMaskNoFBOC
-			ABORT X
-			FAULTACK X
-			MOVEABS X 0 F 100
-			WAIT MOVEDONE X
-			DISABLE X
-			SETPARM X,FaultMask,FWSFaultMask
+			SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMaskNoFBOC
+			ABORT @LinMotAxisNumber
+			FAULTACK @LinMotAxisNumber
+			MOVEABS @LinMotAxisNumber 0 F 100
+			WAIT MOVEDONE @LinMotAxisNumber
+			DISABLE @LinMotAxisNumber
+			SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMask
 			IGLOBAL(iRecoverVar) = RECOVER_NO_OP
 		ELSEIF (RecoverAction = RECOVER_NO_OP) THEN
-			' print "No operation\n"
+		    'do nothing
 		END IF
 	wend
 END PROGRAM
