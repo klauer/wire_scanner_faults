@@ -67,19 +67,19 @@ PROGRAM
 	
 	ONAXISFAULT AxisFaultHandler
 	ONTASKERROR TaskErrorHandler
-	SETPARM X,FaultMask,FWSFaultMask
+	SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMask
 	while (1)
 		SETJMP
 		
 		TEST = TASKSTATE(3)
 		if (TEST = TASKSTATE_Error) AND IGLOBAL(iRecoverVar) != RECOVER_NO_OP THEN
-			SETPARM X,FaultMask,FWSFaultMask
+			SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMask
 			PROGRAM RUN 3, "RecoveryHandler.bcx"
 		END IF
 		'CHECK FAULTMASK VALUE
-		'TEST=GETPARM (X, FaultMask)
+		'TEST=GETPARM (@LinMotAxisNumber, FaultMask)
 		'IF (TEST != FWSFaultMask) THEN
-		'	SETPARM X,FaultMask,FWSFaultMask
+		'	SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMask
 		'END IF
 	wend
 END PROGRAM
@@ -98,15 +98,15 @@ END FUNCTION
 FUNCTION TaskErrorHandler ()
 	'ACKNOWLEDGEALL
 	' Reset the fault mask
-	'SETPARM X,FaultMask,FWSFaultMask
+	'SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMask
 	'PROGRAM RUN 3, "RecoveryHandler.bcx"
 	LONGJMP
 END FUNCTION
 
 
 FUNCTION AxisFaultHandler ()
-	FaultStatus = AXISFAULT(X)
-	'FAULTACK X
+	FaultStatus = AXISFAULT(@LinMotAxisNumber)
+	'FAULTACK @LinMotAxisNumber
 
 	if IGLOBAL(iRecoverVar) != RECOVER_NO_OP then
 		' Recovery script has not yet handled it...
@@ -115,7 +115,7 @@ FUNCTION AxisFaultHandler ()
 	
 	IGLOBAL(iFaultVar) = FaultStatus
 	
-	XAxisStatus = AXISSTATUS(X) 
+	XAxisStatus = AXISSTATUS(@LinMotAxisNumber) 
 	AtUpperLimit = XAxisStatus BAND UPPER_LIMIT_MASK
 	AtLowerLimit = XAxisStatus BAND LOWER_LIMIT_MASK
 	
@@ -142,7 +142,7 @@ FUNCTION AxisFaultHandler ()
 			PRINT "Feedback@lower: "
 		ELSE
 			' TODO: open-loop motion to negative limit?
-			' MSET X, 2, 0 ' ?
+			' MSET @LinMotAxisNumber, 2, 0 ' ?
 			PRINT "Feedback: "
 		END IF
 		IGLOBAL(iRecoverVar) = RECOVER_DISABLE
@@ -170,7 +170,7 @@ FUNCTION AxisFaultHandler ()
 			IGLOBAL(iRecoverVar) = RECOVER_DISABLE
 		ELSE
 			IGLOBAL(iRecoverVar) = RECOVER_NO_OP
-			FAULTACK X
+			FAULTACK @LinMotAxisNumber
 		END IF
 	ELSEIF (FaultStatus = 0) THEN
 		IGLOBAL(iRecoverVar) = RECOVER_NO_OP
