@@ -26,25 +26,45 @@ END DECLARATIONS
 
 PROGRAM
     'clear recovery iglobal variable
-    IGLOBAL(iRecoverVar) = RECOVER_NO_OP
+    'IGLOBAL(iRecoverVar) = RECOVER_NO_OP
+	'ONAXISFAULT TaskErrorHandler
+	print "Task3 started\n"
+	ONTASKERROR TaskErrorHandler
 	while (1)
+		SETJMP
 		RecoverAction = IGLOBAL(iRecoverVar)
 		IF (RecoverAction = RECOVER_DISABLE) THEN
+			print "D\n"
 			ABORT @LinMotAxisNumber
 			DISABLE @LinMotAxisNumber
 			FAULTACK @LinMotAxisNumber
 			IGLOBAL(iRecoverVar) = RECOVER_NO_OP
 		ELSEIF (RecoverAction = RECOVER_RETRACT) THEN
+			print "R\n"
 			SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMaskNoFBOC
 			ABORT @LinMotAxisNumber
 			FAULTACK @LinMotAxisNumber
 			MOVEABS @LinMotAxisNumber 0 F 100
 			WAIT MOVEDONE @LinMotAxisNumber
+			DWELL 0.1
+			MOVEABS @LinMotAxisNumber 0 F 100
+			WAIT INPOS @LinMotAxisNumber
+			dwell 0.1
 			DISABLE @LinMotAxisNumber
 			SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMask
 			IGLOBAL(iRecoverVar) = RECOVER_NO_OP
+			'IGLOBAL(iRecoverVar) = RECOVER_DISABLE
 		ELSEIF (RecoverAction = RECOVER_NO_OP) THEN
 		    'do nothing
 		END IF
 	wend
 END PROGRAM
+
+FUNCTION TaskErrorHandler ()
+	PRINT "(ERR)"
+	'ACKNOWLEDGEALL
+	' Reset the fault mask
+	'SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMask
+	'PROGRAM RUN 3, "RecoveryHandler.bcx"
+	LONGJMP
+END FUNCTION
