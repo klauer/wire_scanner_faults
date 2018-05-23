@@ -71,8 +71,8 @@ PROGRAM
 	while (1)
 		SETJMP
 		
-		TEST = TASKSTATE(3)
-		if (TEST = TASKSTATE_Error) AND IGLOBAL(iRecoverVar) != RECOVER_NO_OP THEN
+		TaskSts = TASKSTATE(3)
+		if (TaskSts != TASKSTATE_ProgramRunning) THEN
 			SETPARM @LinMotAxisNumber,FaultMask,FWSFaultMask
 			PROGRAM RUN 3, "RecoveryHandler.bcx"
 		END IF
