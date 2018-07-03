@@ -86,9 +86,21 @@ async def calibrate_fws(host, comm_port, scope_port, *, acquire=False,
         await comm.scope_stop()
         await comm.scope_wait()
 
-        scopereader = aerotech.ScopeDataReader(comm, host=host,
-                                               port=scope_port)
-        dataset = await scopereader.read_data()
+        while True:
+            scopereader = aerotech.ScopeDataReader(comm, host=host,
+                                                   port=scope_port)
+
+            # TODO scope reader is having trouble with larger datasets...
+            try:
+                dataset = await _run_with_timeout(scopereader.read_data(),
+                                                  timeout=10.0)
+            except Exception:
+                logger.exception('Failed to read data set')
+                await asyncio.sleep(0.5)
+                continue
+            else:
+                break
+
         data[commutation_offset] = dataset
         data_point, pos_cmd, pos_fbk, cur_cmd, cur_fbk = dataset
 

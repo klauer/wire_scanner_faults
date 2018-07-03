@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 def plot(data):
     info = dict(offset=[], average=[], positions=[], current=[])
 
-    for offset, (data_point, pos_cmd, pos_fbk, cur_cmd, cur_fbk) in data.items():
+    for offset, (idx, pos_cmd, pos_fbk, cur_cmd, cur_fbk) in data.items():
         if offset < 180:
             offset += 360
 
