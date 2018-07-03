@@ -1,9 +1,7 @@
 import sys
-import asyncio
 import ast
 
 import numpy as np
-import logging
 import matplotlib
 matplotlib.use('Qt5Agg')  # noqa
 import matplotlib.pyplot as plt
@@ -13,7 +11,7 @@ def plot(data):
     info = dict(offset=[], average=[], positions=[], current=[])
 
     for offset, (data_point, pos_cmd, pos_fbk, cur_cmd, cur_fbk) in data.items():
-        if offset < 10:
+        if offset < 180:
             offset += 360
 
         pos_fbk = np.asarray(pos_fbk[30:-50]) / 1000.
@@ -33,7 +31,6 @@ def plot(data):
                                         info['current']):
         marker = ('x-' if offset == min_offset
                   else '--')
-        print(offset, marker)
 
         avg = np.average(cur_fbk)
         alpha = (1.0 - (avg - min_avg) / avg) ** 3

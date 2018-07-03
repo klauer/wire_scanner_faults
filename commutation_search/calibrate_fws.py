@@ -41,7 +41,7 @@ async def make_connection(host, comm_port):
 
 
 async def calibrate_fws(host, comm_port, scope_port, *, acquire=False,
-                        low=335, high=345):
+                        low=320, high=330):
     comm = await make_connection(host, comm_port)
 
     data = {}
@@ -77,10 +77,10 @@ async def calibrate_fws(host, comm_port, scope_port, *, acquire=False,
         await comm.wait_axis_status('X', aerotech.AxisStatus.InPosition)
         await asyncio.sleep(2.0)
 
-        data_points = 1000
+        data_points = 2000
         await comm.move_and_wait(dict(X=2.2), speed=5, absolute=True)
         await comm.scope_start(data_points=data_points, period_ms=10)
-        await comm.move_and_wait(dict(X=25), speed=5, absolute=True)
+        await comm.move_and_wait(dict(X=42), speed=5, absolute=True)
         await comm.move_and_wait(dict(X=2.2), speed=5, absolute=True)
         await asyncio.sleep(0.15)
         await comm.scope_stop()
