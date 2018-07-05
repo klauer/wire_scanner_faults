@@ -55,6 +55,7 @@ def plot(data):
     plt.ylabel('Average current over scan [A]')
     plt.plot('offset', 'average', data=info)
     plt.show()
+    return info
 
 
 if __name__ == '__main__':
@@ -71,4 +72,5 @@ if __name__ == '__main__':
 
         full_data.update(ast.literal_eval(data))
 
-    plot(full_data)
+    # plt.ion()
+    info = plot(full_data)

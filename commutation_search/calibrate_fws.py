@@ -32,20 +32,22 @@ async def make_connection(host, comm_port):
         await _run_with_timeout(comm.check_program_status(), timeout=2.0)
     except asyncio.TimeoutError:
         logger.debug('Timeout after initial connection; retrying')
+        await asyncio.sleep(1.0)
         return await make_connection(host, comm_port)
     except ConnectionResetError:
         logger.debug('Connection reset after attempt; retrying connection')
+        await asyncio.sleep(1.0)
         return await make_connection(host, comm_port)
 
     return comm
 
 
 async def calibrate_fws(host, comm_port, scope_port, *, acquire=False,
-                        low=320, high=330):
+                        low=330, high=360, step=2):
     comm = await make_connection(host, comm_port)
 
     data = {}
-    for commutation_offset in range(low, high):
+    for commutation_offset in range(low, high, step):
         axis_status = await comm.get_axis_status('X')
         if aerotech.AxisStatus.InPosition in axis_status:
             await comm.move_and_wait(dict(X=2.2), speed=5, absolute=True)
@@ -61,10 +63,10 @@ async def calibrate_fws(host, comm_port, scope_port, *, acquire=False,
 
         await comm.reset()
 
-        await asyncio.sleep(20.0)
+        await asyncio.sleep(10.0)
 
         comm = await make_connection(host, comm_port)
-        await asyncio.sleep(5.0)
+        await asyncio.sleep(2.0)
 
         while True:
             fault_status = await comm.get_axis_fault_status('X')
@@ -97,6 +99,11 @@ async def calibrate_fws(host, comm_port, scope_port, *, acquire=False,
             except Exception:
                 logger.exception('Failed to read data set')
                 await asyncio.sleep(0.5)
+                try:
+                    await comm.close()
+                except Exception:
+                    ...
+                comm = await make_connection(host, comm_port)
                 continue
             else:
                 break
@@ -112,8 +119,8 @@ if __name__ == '__main__':
     try:
         host = sys.argv[1]
     except IndexError:
-        host = 'moc-b34-mc07.slac.stanford.edu'
-        # host = 'moc-b34-mc08.slac.stanford.edu'
+        # host = 'moc-b34-mc07.slac.stanford.edu'
+        host = 'moc-b34-mc08.slac.stanford.edu'
 
     logging.getLogger('aerotech').setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
