@@ -19,7 +19,7 @@
       <P n="Socket2TransmissionSize">0</P>
       <P n="Socket3RemoteIPAddress">0</P>
       <P n="Socket3Port">8001</P>
-      <P n="Socket3Setup">0</P>
+      <P n="Socket3Setup">1</P>
       <P n="Socket3TransmissionSize">0</P>
       <P n="Socket2Timeout">10</P>
       <P n="Socket3Timeout">10</P>
@@ -152,7 +152,7 @@
         <P n="MotorType">6</P>
         <P n="CyclesPerRev">1</P>
         <P n="CountsPerRev">40000</P>
-        <P n="CommutationOffset">345</P>
+        <P n="CommutationOffset">326</P>
         <P n="AutoMsetTime">2000</P>
         <P n="AutoMsetCurrent">3</P>
         <P n="PositionFeedbackType">1</P>
