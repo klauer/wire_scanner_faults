@@ -84,11 +84,12 @@ async def check_commutation_offset(host, comm_port, scope_port,
     await asyncio.sleep(2.0)
 
     data_points = 2000
+    await comm.home(axis_name)
     await comm.move_and_wait({axis_name: 2.2}, speed=5, absolute=True,
                              poll_period=0.1)
     await comm.scope_start(data_points=data_points, period_ms=10)
     await comm.move_and_wait({axis_name: 42.}, speed=5, absolute=True,
-                             poll_period=0.1)
+                             poll_period=0.05)
     await comm.move_and_wait({axis_name: 2.2}, speed=5, absolute=True,
                              poll_period=0.1)
     await asyncio.sleep(0.15)
@@ -130,7 +131,8 @@ async def calibrate_fws(host, comm_port, scope_port, *, acquire=False,
             data[commutation_offset] = dataset
             data_point, pos_cmd, pos_fbk, cur_cmd, cur_fbk = dataset
 
-            with open('results-{}-{}.txt'.format(low, high), 'wt') as f:
+            filename = 'results-{}-{}_step{}.txt'.format(low, high, step)
+            with open(filename, 'wt') as f:
                 print(data, file=f)
         except KeyboardInterrupt:
             response = input('Continue? [Y/n]')
