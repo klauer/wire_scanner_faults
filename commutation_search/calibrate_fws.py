@@ -83,11 +83,11 @@ async def check_commutation_offset(host, comm_port, scope_port,
 
     await asyncio.sleep(2.0)
 
-    data_points = 2000
+    data_points = 2500
     await comm.home(axis_name)
     await comm.move_and_wait({axis_name: 2.2}, speed=5, absolute=True,
                              poll_period=0.1)
-    await comm.scope_start(data_points=data_points, period_ms=10)
+    await comm.scope_start(data_points=data_points, period_ms=5)
     await comm.move_and_wait({axis_name: 42.}, speed=5, absolute=True,
                              poll_period=0.05)
     await comm.move_and_wait({axis_name: 2.2}, speed=5, absolute=True,

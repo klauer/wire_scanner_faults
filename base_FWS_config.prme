@@ -3405,7 +3405,7 @@
   </Parameters>
   <Data>
     <FileInfo>
-      <InterfaceVersion>5.6.1.8</InterfaceVersion>
+      <InterfaceVersion>5.6.0.17</InterfaceVersion>
     </FileInfo>
     <OldestCompatibleParameterFileVersion>3.3</OldestCompatibleParameterFileVersion>
   </Data>
