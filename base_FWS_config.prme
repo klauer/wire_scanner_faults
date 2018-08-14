@@ -183,7 +183,7 @@
         <P n="AbortDecelRate">500</P>
         <P n="HomeType">3</P>
         <P n="HomeSetup">0</P>
-        <P n="HomeSpeed">1</P>
+        <P n="HomeSpeed">2</P>
         <P n="HomeOffset">1</P>
         <P n="HomeRampRate">100</P>
         <P n="StepperResolution">0</P>
