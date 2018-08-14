@@ -425,7 +425,7 @@
         <P n="StepperDampingCutoffFrequency">150</P>
         <P n="AxisName">X</P>
       </Axis>
-      <Axis exists="true" number="1">
+      <Axis exists="false" number="1">
         <P n="AxisType">0</P>
         <P n="ReverseMotionDirection">0</P>
         <P n="CountsPerUnit">11.111111111111017</P>
