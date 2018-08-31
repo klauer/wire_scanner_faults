@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>709</width>
+    <height>767</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>600</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
+   <item row="1" column="1">
+    <widget class="PyDMPushButton" name="PyDMPushButton_3">
+     <property name="toolTip">
+      <string/>
+     </property>
+     <property name="whatsThis">
+      <string>
+    Basic PushButton to send a fixed value.
+
+    The PyDMPushButton is meant to hold a specific value, and send that value
+    to a channel when it is clicked, much like the MessageButton does in EDM.
+    The PyDMPushButton works in two different modes of operation, first, a
+    fixed value can be given to the :attr:`.pressValue` attribute, whenever the
+    button is clicked a signal containing this value will be sent to the
+    connected channel. This is the default behavior of the button. However, if
+    the :attr:`.relativeChange` is set to True, the fixed value will be added
+    to the current value of the channel. This means that the button will
+    increment a channel by a fixed amount with every click, a consistent
+    relative move
+
+    Parameters
+    ----------
+    parent : QObject, optional
+        Parent of PyDMPushButton
+
+    label : str, optional
+        String to place on button
+
+    icon : QIcon, optional
+        An Icon to display on the PyDMPushButton
+
+    pressValue : int, float, str
+        Value to be sent when the button is clicked
+
+    relative : bool, optional
+        Choice to have the button perform a relative put, instead of always
+        setting to an absolute value
+
+    init_channel : str, optional
+        ID of channel to manipulate
+
+    </string>
+     </property>
+     <property name="text">
+      <string>Commit Parameters</string>
+     </property>
+     <property name="alarmSensitiveBorder" stdset="0">
+      <bool>false</bool>
+     </property>
+     <property name="precisionFromPV" stdset="0">
+      <bool>false</bool>
+     </property>
+     <property name="channel" stdset="0">
+      <string>ensemble://${host}:${port}/COMMITPARAMETERS</string>
+     </property>
+     <property name="showConfirmDialog" stdset="0">
+      <bool>true</bool>
+     </property>
+     <property name="pressValue" stdset="0">
+      <string>1</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="1" column="3">
+      <widget class="QLabel" name="label_4">
+       <property name="font">
+        <font>
+         <underline>true</underline>
+        </font>
+       </property>
+       <property name="text">
+        <string>Task 4 / FaultMonitor</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="5">
+      <widget class="QLabel" name="label_6">
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+         <underline>false</underline>
+        </font>
+       </property>
+       <property name="text">
+        <string>Ensemble - ${host}:${port} (poll rate ${rate}s)</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label">
+       <property name="font">
+        <font>
+         <underline>true</underline>
+        </font>
+       </property>
+       <property name="text">
+        <string>Task 1 / doCommand</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2">
+      <widget class="QLabel" name="label_3">
+       <property name="font">
+        <font>
+         <underline>true</underline>
+        </font>
+       </property>
+       <property name="text">
+        <string>Task 3 / Recovery</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="label_2">
+       <property name="font">
+        <font>
+         <underline>true</underline>
+        </font>
+       </property>
+       <property name="text">
+        <string>Task 2 / Scope</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4">
+      <widget class="QLabel" name="label_5">
+       <property name="font">
+        <font>
+         <underline>true</underline>
+        </font>
+       </property>
+       <property name="text">
+        <string>Task 5 / Auxiliary</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="PyDMLabel" name="Task1Status_2">
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="channel" stdset="0">
+        <string>ensemble://${host}:${port}@${rate}/TASKSTATE(1)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="PyDMLabel" name="Task1Status_3">
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="channel" stdset="0">
+        <string>ensemble://${host}:${port}@${rate}/TASKSTATE(2)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2">
+      <widget class="PyDMLabel" name="Task1Status_4">
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="channel" stdset="0">
+        <string>ensemble://${host}:${port}@${rate}/TASKSTATE(3)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="3">
+      <widget class="PyDMLabel" name="Task1Status_5">
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="channel" stdset="0">
+        <string>ensemble://${host}:${port}@${rate}/TASKSTATE(4)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="4">
+      <widget class="PyDMLabel" name="Task1Status_6">
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+       <property name="channel" stdset="0">
+        <string>ensemble://${host}:${port}@${rate}/TASKSTATE(5)</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="axis0">
+      <attribute name="title">
+       <string>Axis 0</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="PyDMEmbeddedDisplay" name="Axis1Status">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="whatsThis">
+          <string>
+    A QFrame capable of rendering a PyDM Display
+
+    Parameters
+    ----------
+    parent : QWidget
+        The parent widget for the Label
+
+    </string>
+         </property>
+         <property name="macros" stdset="0">
+          <string>{&quot;axis&quot;: &quot;@0&quot;}</string>
+         </property>
+         <property name="filename" stdset="0">
+          <string>ensemble_axis.ui</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="PyDMPushButton" name="Reset">
+     <property name="toolTip">
+      <string/>
+     </property>
+     <property name="text">
+      <string>Reset Controller</string>
+     </property>
+     <property name="alarmSensitiveBorder" stdset="0">
+      <bool>false</bool>
+     </property>
+     <property name="precisionFromPV" stdset="0">
+      <bool>false</bool>
+     </property>
+     <property name="channel" stdset="0">
+      <string>ensemble://${host}:${port}/RESET</string>
+     </property>
+     <property name="showConfirmDialog" stdset="0">
+      <bool>true</bool>
+     </property>
+     <property name="pressValue" stdset="0">
+      <string>1</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PyDMLabel</class>
+   <extends>QLabel</extends>
+   <header>pydm.widgets.label</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMEmbeddedDisplay</class>
+   <extends>QFrame</extends>
+   <header>pydm.widgets.embedded_display</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMPushButton</class>
+   <extends>QPushButton</extends>
+   <header>pydm.widgets.pushbutton</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
