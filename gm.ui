@@ -93,7 +93,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Task 4 / FaultMonitor</string>
+        <string>Task 4</string>
        </property>
       </widget>
      </item>
@@ -122,7 +122,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Task 1 / doCommand</string>
+        <string>Task 1</string>
        </property>
       </widget>
      </item>
@@ -134,7 +134,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Task 3 / Recovery</string>
+        <string>Task 3</string>
        </property>
       </widget>
      </item>
@@ -146,7 +146,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Task 2 / Scope</string>
+        <string>Task 2</string>
        </property>
       </widget>
      </item>
@@ -158,7 +158,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Task 5 / Auxiliary</string>
+        <string>Task 5</string>
        </property>
       </widget>
      </item>
@@ -270,7 +270,7 @@
      <property name="currentIndex">
       <number>0</number>
      </property>
-     <widget class="QWidget" name="axis0">
+     <widget class="QWidget" name="tab_axis0">
       <attribute name="title">
        <string>Axis 0</string>
       </attribute>
@@ -293,6 +293,99 @@
          </property>
          <property name="macros" stdset="0">
           <string>{&quot;axis&quot;: &quot;@0&quot;}</string>
+         </property>
+         <property name="filename" stdset="0">
+          <string>ensemble_axis.ui</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_axis1">
+      <attribute name="title">
+       <string>Axis 1</string>
+      </attribute>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="PyDMEmbeddedDisplay" name="Axis1Status_2">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="whatsThis">
+          <string>
+    A QFrame capable of rendering a PyDM Display
+
+    Parameters
+    ----------
+    parent : QWidget
+        The parent widget for the Label
+
+    </string>
+         </property>
+         <property name="macros" stdset="0">
+          <string>{&quot;axis&quot;: &quot;@1&quot;}</string>
+         </property>
+         <property name="filename" stdset="0">
+          <string>ensemble_axis.ui</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_axis2">
+      <attribute name="title">
+       <string>Axis 2</string>
+      </attribute>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="PyDMEmbeddedDisplay" name="Axis1Status_3">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="whatsThis">
+          <string>
+    A QFrame capable of rendering a PyDM Display
+
+    Parameters
+    ----------
+    parent : QWidget
+        The parent widget for the Label
+
+    </string>
+         </property>
+         <property name="macros" stdset="0">
+          <string>{&quot;axis&quot;: &quot;@2&quot;}</string>
+         </property>
+         <property name="filename" stdset="0">
+          <string>ensemble_axis.ui</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_axis3">
+      <attribute name="title">
+       <string>Axis 3</string>
+      </attribute>
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="PyDMEmbeddedDisplay" name="Axis1Status_4">
+         <property name="toolTip">
+          <string/>
+         </property>
+         <property name="whatsThis">
+          <string>
+    A QFrame capable of rendering a PyDM Display
+
+    Parameters
+    ----------
+    parent : QWidget
+        The parent widget for the Label
+
+    </string>
+         </property>
+         <property name="macros" stdset="0">
+          <string>{&quot;axis&quot;: &quot;@3&quot;}</string>
          </property>
          <property name="filename" stdset="0">
           <string>ensemble_axis.ui</string>
